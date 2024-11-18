@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Form</title>
+    <link rel="stylesheet" href="porty.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <h2>Contact Me</h2>
+    <div class="contact-container">
+        <div class="contact-map">
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d7832.504825890081!2d76.97068519999998!3d11.019679000000005!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sau!4v1724507809428!5m2!1sen!2sau"
+                width="100%" 
+                height="100%" 
+                style="border:0;" 
+                allowfullscreen="" 
+                loading="lazy">
+            </iframe>
+        </div>
+        <div class="contact-form">
+            <form id="contactForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Your Name</label>
+                        <input type="text" id="name" name="name" required placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Your Phone No</label>
+                        <input type="text" id="phone" name="phone" required placeholder="Enter your phone number">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Your Email ID</label>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="message">Your Message</label>
+                    <textarea id="message" name="message" rows="5" required placeholder="Enter your message"></textarea>
+                </div>
+                <button type="submit" id="submitButton">Send</button>
+            </form>
+            <div id="feedback"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        // Initialize EmailJS with your User ID
+        (function() {
+            emailjs.init("Y5HWOxSax4hpS-psZ"); // Replace with your EmailJS Public Key
+        })();
+
+        // Add event listener to the form submission
+        document.getElementById('contactForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+            console.log("Form submission initiated.");
+
+            const feedback = document.getElementById('feedback');
+            const submitButton = document.getElementById('submitButton');
+            
+            // Clear previous feedback
+            feedback.innerHTML = '';
+
+            // Disable the button to prevent multiple submissions
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+
+            // Send the form data using EmailJS
+            emailjs.sendForm('service_6oo3o5a', 'template_trh1b3d', this)
+                .then(function(response) {
+                    console.log('Email sent successfully:', response.status, response.text);
+                    // Show success feedback to the user
+                    feedback.innerHTML = '<p class="success-message">Your message has been sent successfully! Thank you for reaching out.</p>';
+                    feedback.style.color = 'green';
+
+                    // Reset the form
+                    document.getElementById('contactForm').reset();
+
+                    // Re-enable the button
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Send';
+                })
+                .catch(function(error) {
+                    console.error('Failed to send email:', error);
+                    // Show error feedback to the user
+                    feedback.innerHTML = '<p class="error-message">Something went wrong while sending your message. Please try again later.</p>';
+                    feedback.style.color = 'red';
+
+                    // Re-enable the button
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Send';
+                });
+        });
+    </script>
+</body>
+</html>

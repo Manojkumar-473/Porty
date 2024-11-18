@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do App with Password</title>
+    <link rel="stylesheet" href="todo.css">
+    <style>
+        /* Full-Screen Styling */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f4f4f9;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Login Page */
+        .login-container {
+            text-align: center;
+            padding: 30px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            max-width: 100%;
+        }
+
+        #username, #password {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 90%;
+        }
+
+        #login-btn {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #login-btn:hover {
+            background-color: #388e3c;
+        }
+
+        /* To-Do Container */
+        .todo-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #task-date, #task-status, #task-input, #task-reminder {
+            padding: 5px;
+        }
+
+        #add-task-btn, #generate-pdf-btn {
+            padding: 5px 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #add-task-btn:hover, #generate-pdf-btn:hover {
+            background-color: #388e3c;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: #f0f0f0;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        li.not-started {
+            background-color: #f44336;
+        }
+
+        li.recently-started {
+            background-color: #ff9800;
+        }
+
+        li.work-in-progress {
+            background-color: #ffeb3b;
+        }
+
+        li.complete-soon {
+            background-color: #03a9f4;
+        }
+
+        li.completed {
+            background-color: #4caf50;
+            text-decoration: line-through;
+        }
+
+        .task-date-display {
+            font-size: 12px;
+            color: #777;
+        }
+
+        /* Media Queries for Tablet and Mobile Screens */
+        @media (max-width: 768px) {
+            .todo-container {
+                width: 90%;
+                padding: 15px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #task-input, #task-date, #task-status, #task-reminder {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            #add-task-btn {
+                width: 100%;
+            }
+
+            ul li {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                width: 90%;
+                padding: 20px;
+            }
+
+            .todo-container {
+                width: 95%;
+                padding: 10px;
+            }
+
+            ul li {
+                padding: 10px;
+            }
+
+            .header {
+                gap: 5px;
+            }
+
+            #task-input, #task-date, #task-status, #task-reminder, #add-task-btn {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            .task-date-display {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div class="login-container">
+        <h1>Login</h1>
+        <input type="text" id="username" placeholder="Enter Username">
+        <input type="password" id="password" placeholder="Enter Password">
+        <button id="login-btn">Login</button>
+        <p id="login-error" style="color: red; display: none;">Invalid username or password.</p>
+    </div>
+
+    <!-- To-Do Section -->
+    <div class="todo-container" style="display: none;">
+        <h1>Tasks for <span id="user-name"></span></h1>
+        <div class="header">
+            <input type="text" id="task-input" placeholder="Add a new task...">
+            <input type="date" id="task-date">
+            <input type="datetime-local" id="task-reminder">
+            <select id="task-status">
+                <option value="not-started">Not Started</option>
+                <option value="recently-started">Scheduled</option>
+                <option value="work-in-progress">Request done</option>
+                <option value="complete-soon">Waiting for response</option>
+                <option value="completed">Completed</option>
+            </select>
+            <button id="add-task-btn">Add Task</button>
+        </div>
+        <ul id="task-list"></ul>
+        <button id="generate-pdf-btn">Generate PDF</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+        // To-Do App Login and Task Management
+        let currentUser = null;
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+
+        const loginContainer = document.querySelector('.login-container');
+        const todoContainer = document.querySelector('.todo-container');
+        const taskList = document.getElementById('task-list');
+        const taskInput = document.getElementById('task-input');
+        const taskStatus = document.getElementById('task-status');
+        const taskDate = document.getElementById('task-date');
+        const taskReminder = document.getElementById('task-reminder');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const generatePdfBtn = document.getElementById('generate-pdf-btn');
+        const loginError = document.getElementById('login-error');
+
+        // Date and Time Password Generator
+        function getCurrentDate() {
+            const date = new Date();
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}${month}${year}`;
+        }
+
+        function getCurrentTime() {
+            const date = new Date();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}${minutes}`;
+        }
+
+        // Check login
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            const validUsernames = ['manoj', 'prasanth', 'dilakshika', 'tcmaffordability@gmail.com'];
+            const validPasswords = [getCurrentDate(), getCurrentTime()];
+
+            if (validUsernames.includes(username) && validPasswords.includes(password)) {
+                currentUser = username;
+                loginContainer.style.display = 'none';
+                todoContainer.style.display = 'block';
+                document.getElementById('user-name').textContent = username;
+
+                // Load user tasks from localStorage
+                if (tasks[currentUser]) {
+                    tasks[currentUser].forEach(task => addTaskToDOM(task));
+                } else {
+                    tasks[currentUser] = [];
+                }
+            } else {
+                loginError.style.display = 'block';
+            }
+        });
+
+        // Add task
+        addTaskBtn.addEventListener('click', () => {
+            const taskText = taskInput.value.trim();
+            const status = taskStatus.value;
+            const date = taskDate.value;
+            const reminder = taskReminder.value;
+
+            if (taskText && date) {
+                const newTask = { text: taskText, status, date, reminder };
+                tasks[currentUser].push(newTask);
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+                addTaskToDOM(newTask);
+                taskInput.value = '';
+                taskDate.value = '';
+                taskReminder.value = '';
+                checkReminders();
+            }
+        });
+
+        // Add task to DOM
+        function addTaskToDOM(task) {
+            const li = document.createElement('li');
+            li.textContent = `${task.text} (${task.date}) - ${task.status}`;
+            li.classList.add(task.status);
+            const dateDisplay = document.createElement('span');
+            dateDisplay.classList.add('task-date-display');
+            dateDisplay.textContent = `Reminder: ${task.reminder ? new Date(task.reminder).toLocaleString() : 'No reminder'}`;
+            li.appendChild(dateDisplay);
+            taskList.appendChild(li);
+        }
+
+        // Check for reminders
+        function checkReminders() {
+            const now = new Date();
+            tasks[currentUser].forEach(task => {
+                if (task.reminder && new Date(task.reminder) <= now) {
+                    alert(`Reminder: ${task.text}`);
+                    task.reminder = ''; // Clear the reminder after notifying
+                }
+            });
+            localStorage.setItem('tasks', JSON.stringify(tasks)); // Update storage
+        }
+
+        // Generate PDF
+        generatePdfBtn.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(`To-Do List for ${currentUser}`, 20, 10);
+            let y = 20;
+            tasks[currentUser].forEach((task, index) => {
+                doc.text(`${index + 1}. ${task.text} - ${task.status} - Reminder: ${task.reminder ? new Date(task.reminder).toLocaleString() : 'None'}`, 20, y);
+                y += 10;
+            });
+            doc.save('tasks.pdf');
+        });
+
+        // Periodically check reminders every minute
+        setInterval(checkReminders, 60000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            border-radius: 8px;
+        }
+
+        .title {
+            text-align: center;
+            color: #FF9800;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .balance-section {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .balance, .budget {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        .input-section {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-section input,
+        .input-section select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .amount-buttons {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .amount-buttons button {
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            flex: 1 1 calc(25% - 10px);
+            min-width: 80px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s;
+        }
+
+        .amount-buttons button:hover {
+            background-color: #FFA726;
+        }
+
+        #addTransaction, #setBudget {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        #addTransaction:hover, #setBudget:hover {
+            background-color: #45a049;
+        }
+
+        .report-section {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .report-table th, .report-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            background-color: #f2f2f2;
+        }
+
+        .report-table th {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .remove-button {
+            background-color: #F44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .remove-button:hover {
+            background-color: #E53935;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+        }
+
+        .description-suggestion {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            max-height: 100px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .description-suggestion div {
+            padding: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .description-suggestion div:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="title">Expense Tracker</div>
+        <div class="balance-section">
+            <div class="balance">Current Balance: <span id="balance">₹0</span></div>
+            <div class="budget">Monthly Budget: <span id="budget">₹0</span></div>
+        </div>
+
+        <div class="input-section">
+            <input type="number" id="amount" placeholder="Amount" required>
+            <select id="reason">
+                <option value="">Select Reason</option>
+                <option value="Salary">Salary</option>
+                <option value="Food">Food</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Rent">Rent</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Other">Other</option>
+            </select>
+            <div class="description-suggestion" id="descriptionSuggestions"></div>
+            <input type="text" id="description" placeholder="Description" required>
+            <div class="amount-buttons">
+                <button class="amount-btn" data-value="100">₹100</button>
+                <button class="amount-btn" data-value="500">₹500</button>
+                <button class="amount-btn" data-value="1000">₹1000</button>
+                <button class="amount-btn" data-value="5000">₹5000</button>
+            </div>
+            <button id="addTransaction">Add Transaction</button>
+        </div>
+
+        <div class="input-section">
+            <input type="number" id="setBudgetInput" placeholder="Set Monthly Budget" required>
+            <button id="setBudget">Set Budget</button>
+        </div>
+
+        <div class="report-section">
+            <table class="report-table" id="reportTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Reason</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const balanceElement = document.getElementById('balance');
+        const budgetElement = document.getElementById('budget');
+        const reportBody = document.getElementById('reportBody');
+        const pieChartCtx = document.getElementById('pieChart').getContext('2d');
+        const setBudgetInput = document.getElementById('setBudgetInput');
+        const reasonSelect = document.getElementById('reason');
+        const descriptionSuggestions = document.getElementById('descriptionSuggestions');
+        const descriptionInput = document.getElementById('description');
+
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let monthlyBudget = localStorage.getItem('monthlyBudget') || 0;
+
+        function updateBalance() {
+            const balance = transactions.reduce((sum, transaction) => {
+                return transaction.type === 'income' ? sum + transaction.amount : sum - transaction.amount;
+            }, 0);
+            balanceElement.textContent = `₹${balance}`;
+            budgetElement.textContent = `₹${monthlyBudget}`;
+        }
+
+        function populateReport() {
+            reportBody.innerHTML = '';
+            transactions.forEach((transaction, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(transaction.date).toLocaleDateString()}</td>
+                    <td>${transaction.type}</td>
+                    <td>${transaction.reason}</td>
+                    <td>${transaction.description}</td>
+                    <td>₹${transaction.amount}</td>
+                    <td><button class="remove-button" onclick="removeTransaction(${index})">Remove</button></td>
+                `;
+                reportBody.appendChild(row);
+            });
+        }
+
+        function addTransaction(type) {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const reason = document.getElementById('reason').value;
+            const description = document.getElementById('description').value;
+
+            if (amount && reason && description) {
+                const transaction = {
+                    date: new Date(),
+                    type,
+                    reason,
+                    description,
+                    amount,
+                };
+                transactions.push(transaction);
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+                clearInputs();
+                updateBalance();
+                populateReport();
+                generatePieChart();
+            } else {
+                alert('Please fill in all fields!');
+            }
+        }
+
+        function removeTransaction(index) {
+            const transactionDate = new Date(transactions[index].date).toLocaleDateString();
+            const today = new Date().toLocaleDateString();
+            if (transactionDate === today) {
+                transactions.splice(index, 1);
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+                updateBalance();
+                populateReport();
+                generatePieChart();
+            } else {
+                alert("You can only remove today's transactions.");
+            }
+        }
+
+        function setMonthlyBudget() {
+            monthlyBudget = setBudgetInput.value;
+            localStorage.setItem('monthlyBudget', monthlyBudget);
+            budgetElement.textContent = `₹${monthlyBudget}`;
+        }
+
+        function generatePieChart() {
+            const incomeTotal = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const expenseTotal = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const pieChart = new Chart(pieChartCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Income', 'Expenses'],
+                    datasets: [{
+                        label: 'Financial Overview',
+                        data: [incomeTotal, expenseTotal],
+                        backgroundColor: ['#4CAF50', '#F44336'],
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Income vs Expenses'
+                        }
+                    }
+                },
+            });
+        }
+
+        // Event Listeners
+        document.querySelectorAll('.amount-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const buttonValue = parseFloat(btn.getAttribute('data-value'));
+                const currentAmount = parseFloat(document.getElementById('amount').value) || 0;
+                document.getElementById('amount').value = currentAmount + buttonValue;
+            });
+        });
+
+        document.getElementById('addTransaction').addEventListener('click', () => {
+            const type = reasonSelect.value === "Salary" ? 'income' : 'expense';
+            addTransaction(type);
+        });
+
+        document.getElementById('setBudget').addEventListener('click', setMonthlyBudget);
+
+        // Clear input fields after transaction
+        function clearInputs() {
+            document.getElementById('amount').value = '';
+            reasonSelect.value = '';
+            descriptionInput.value = '';
+            descriptionSuggestions.style.display = 'none';
+        }
+
+        // Description Suggestions based on selected reason
+        reasonSelect.addEventListener('change', () => {
+            const selectedReason = reasonSelect.value;
+            const suggestions = {
+                'Food': ['Breakfast', 'Lunch', 'Dinner', 'Snacks'],
+                'Transportation': ['Bus fare', 'Taxi', 'Fuel'],
+                'Entertainment': ['Movies', 'Games', 'Concerts'],
+                'Utilities': ['Electricity', 'Water', 'Internet'],
+                'Rent': ['Monthly Rent', 'Deposit'],
+                'Shopping': ['Groceries', 'Clothes', 'Electronics'],
+                'Healthcare': ['Medicine', 'Checkup', 'Insurance'],
+                'Other': ['Miscellaneous', 'Unexpected'],
+            };
+            descriptionSuggestions.innerHTML = '';
+
+            if (suggestions[selectedReason]) {
+                suggestions[selectedReason].forEach(desc => {
+                    const suggestionDiv = document.createElement('div');
+                    suggestionDiv.textContent = desc;
+                    suggestionDiv.onclick = () => {
+                        descriptionInput.value = desc;
+                        descriptionSuggestions.style.display = 'none';
+                    };
+                    descriptionSuggestions.appendChild(suggestionDiv);
+                });
+                descriptionSuggestions.style.display = 'block';
+            } else {
+                descriptionSuggestions.style.display = 'none';
+            }
+        });
+
+        // Initialize
+        function initialize() {
+            const budget = localStorage.getItem('monthlyBudget') || 0;
+            budgetElement.textContent = `₹${budget}`;
+            setBudgetInput.value = budget;
+            updateBalance();
+            populateReport();
+            generatePieChart();
+        }
+
+        window.onload = initialize;
+    </script>
+</body>
+
+</html>

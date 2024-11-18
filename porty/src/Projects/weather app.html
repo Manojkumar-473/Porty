@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tap the Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    #map {
+      height: 47vh;
+      width: 100%;
+      max-width: 1000px;
+      margin-bottom: 15px;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      border: 1px solid #ddd;
+    }
+    
+    #info-panel {
+      background-color: white;
+      width: 100%;
+      max-width: 900px;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    h2 {
+      font-size: 24px;
+      color: #0077cc;
+      text-align: center;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #0077cc;
+      margin-bottom: 20px;
+    }
+    
+    .details {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .details p {
+      margin: 0;
+      font-size: 16px;
+      color: #666;
+    }
+    
+    .section {
+      margin-top: 25px;
+    }
+    
+    .section h3 {
+      color: #ff6f61;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    
+    .section p {
+      margin: 0;
+      font-size: 16px;
+      color: #444;
+    }
+    
+    #search-container {
+      width: 100%;
+      max-width: 1000px;
+      margin: 10px 0;
+      display: flex;
+      justify-content: center;
+    }
+    
+    #search-bar {
+      width: 100%;
+      max-width: 600px;
+      padding: 15px 20px;
+      font-size: 16px;
+      border-radius: 50px;
+      border: 1px solid #ddd;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    #search-bar:focus {
+      outline: none;
+      border-color: #0077cc;
+      box-shadow: 0 4px 12px rgba(0, 119, 204, 0.2);
+    }
+    
+    @media (max-width: 768px) {
+      #map {
+        height: 40vh;
+        width: 95%;
+      }
+    
+      #info-panel {
+        width: 95%;
+      }
+    
+      .details {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    
+      #search-bar {
+        max-width: 90%;
+      }
+    }
+    
+  </style>
+</head>
+<body>
+
+  <!-- Search Bar -->
+  <div id="search-container">
+    <input type="text" id="search-bar" placeholder="Search for a city or place..." onkeydown="handleSearch(event)" />
+  </div>
+
+  <!-- Map Section -->
+  <div id="map"></div>
+
+  <!-- Info Panel Section -->
+  <div id="info-panel">
+    <h2>Location Information</h2>
+
+    <div class="details">
+      <p id="location-name">Know the unknown by tap the map</p>
+      <p id="date-time">Date: --, Time: --</p>
+    </div>
+
+    <div class="details">
+      <p id="weather-info">Weather: --</p>
+      <p id="day-night-info">Day/Night: --</p>
+    </div>
+
+    <div class="section">
+      <h3>Tourist Spots</h3>
+      <p id="tourist-spots">Tourist Spots: --</p>
+    </div>
+
+    <div class="section">
+      <h3>Food Spots</h3>
+      <p id="food-spots">Food Spots: --</p>
+    </div>
+  </div>
+
+  <!-- Leaflet.js -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+  <!-- JavaScript Code -->
+  <script>
+    const weatherAPIKey = '036cd44b7379a10b88bf37eb57b1d4b0';
+    const foursquareAPIKey = 'fsq3MGVti4g9JKsWOQHnM2Cl+n/twB7reb4go/kaHRuK46E=';
+    const foursquareBaseURL = 'https://api.foursquare.com/v3/places/search';
+    const weatherAPIBase = 'https://api.openweathermap.org/data/2.5/weather?';
+    const touristRadius = 50000; 
+    const foodRadius = 5000;
+
+    // Initialize Leaflet Map
+    const map = L.map('map').setView([20.5937, 78.9629], 4); // Centered at India
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add click event listener to the map
+    map.on('click', function(e) {
+      const lat = e.latlng.lat;
+      const lon = e.latlng.lng;
+      fetchWeatherAndTime(lat, lon);
+    });
+
+    // Fetch weather and time data
+    function fetchWeatherAndTime(lat, lon) {
+      const weatherAPIUrl = `${weatherAPIBase}lat=${lat}&lon=${lon}&appid=${weatherAPIKey}&units=metric`;
+
+      fetch(weatherAPIUrl)
+        .then(response => response.json())
+        .then(data => {
+          const locationName = data.name || `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+          const temperature = data.main.temp;
+          const weatherDescription = data.weather[0].description;
+          const windSpeed = data.wind.speed;
+          const clouds = data.clouds.all;
+
+          const timezoneOffsetSeconds = data.timezone;
+          const localUTC = new Date().getTime() + (new Date().getTimezoneOffset() * 60000);
+          const localTime = new Date(localUTC + (timezoneOffsetSeconds * 1000));
+
+          // Update the date and time without seconds
+          updateDateTime(localTime);
+
+          const isDay = data.weather[0].icon.includes('d') ? 'Day' : 'Night';
+
+          document.getElementById('location-name').textContent = locationName;
+          document.getElementById('weather-info').textContent = `Temp: ${temperature}°C, ${weatherDescription}, Wind Speed: ${windSpeed} m/s, Clouds: ${clouds}%`;
+          document.getElementById('day-night-info').textContent = isDay;
+
+          fetchTouristSpots(lat, lon);
+          fetchFoodSpots(lat, lon);
+        })
+        .catch(error => console.error('Error fetching weather data:', error));
+    }
+
+    // Update the date and time, no seconds
+    function updateDateTime(localTime) {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+
+      let hours = localTime.getHours();
+      const minutes = localTime.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // The hour '0' should be '12'
+
+      const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+      const dateString = localTime.toLocaleDateString('en-US', options);
+
+      document.getElementById('date-time').textContent = `Date: ${dateString}, Time: ${formattedTime}`;
+    }
+
+    // Fetch tourist spots using Foursquare API
+    function fetchTouristSpots(lat, lon) {
+      const touristPlacesAPIUrl = `${foursquareBaseURL}?ll=${lat},${lon}&radius=${touristRadius}&categories=16000&limit=5`;
+
+      fetch(touristPlacesAPIUrl, {
+        headers: { Accept: 'application/json', Authorization: foursquareAPIKey }
+      })
+      .then(response => response.json())
+      .then(data => {
+        let touristSpots = 'No tourist spots found nearby.';
+        if (data.results.length > 0) {
+          touristSpots = data.results.map(place => place.name).join(', ');
+        }
+        document.getElementById('tourist-spots').textContent = touristSpots;
+      })
+      .catch(error => console.error('Error fetching tourist spots:', error));
+    }
+
+    // Fetch food spots using Foursquare API
+    function fetchFoodSpots(lat, lon) {
+      const foodPlacesAPIUrl = `${foursquareBaseURL}?ll=${lat},${lon}&radius=${foodRadius}&categories=13000&limit=5`;
+
+      fetch(foodPlacesAPIUrl, {
+        headers: { Accept: 'application/json', Authorization: foursquareAPIKey }
+      })
+      .then(response => response.json())
+      .then(data => {
+        let foodSpots = 'No food spots found nearby.';
+        if (data.results.length > 0) {
+          foodSpots = data.results.map(place => place.name).join(', ');
+        }
+        document.getElementById('food-spots').textContent = foodSpots;
+      })
+      .catch(error => console.error('Error fetching food spots:', error));
+    }
+
+    // Search function
+    function handleSearch(event) {
+      if (event.key === 'Enter') {
+        const query = document.getElementById('search-bar').value;
+        if (query.trim() !== '') {
+          const geocodeURL = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+          fetch(geocodeURL)
+            .then(response => response.json())
+            .then(data => {
+              if (data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lon = parseFloat(data[0].lon);
+                map.setView([lat, lon], 12);
+                fetchWeatherAndTime(lat, lon);
+              } else {
+                alert('Location not found.');
+              }
+            })
+            .catch(error => console.error('Error fetching geocode data:', error));
+        }
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Expense Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Basic styles for login form */
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--background-color);
+        }
+
+        .login-form {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            width: 300px;
+            text-align: center;
+        }
+
+        .login-form h2 {
+            margin-bottom: 20px;
+        }
+
+        .login-form .form-control {
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        .login-form .form-control label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .login-form .form-control input {
+            padding: 10px;
+            width: 100%;
+            border-radius: var(--border-radius);
+            border: 1px solid #ddd;
+        }
+
+        .login-form button {
+            padding: 10px;
+            width: 100%;
+            border-radius: var(--border-radius);
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .login-form button:hover {
+            background-color: #2980b9;
+        }
+
+        .toggle-link {
+            margin-top: 15px;
+            color: var(--primary-color);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-form">
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="form-control">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-control">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit">Login</button>
+                <p class="toggle-link" id="toggle-signup">Don't have an account? Sign Up</p>
+            </form>
+
+            <!-- Sign Up Form (Initially Hidden) -->
+            <form id="signup-form" style="display:none;">
+                <h2>Sign Up</h2>
+                <div class="form-control">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-control">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit">Sign Up</button>
+                <p class="toggle-link" id="toggle-login">Already have an account? Login</p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log(err));
+
+// User schema and model
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+});
+
+const User = mongoose.model('User', userSchema);
+
+// Register Route
+app.post('/api/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    // Check if user already exists
+    const userExists = await User.findOne({ username });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Login Route
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    // Find the user by username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Generate a token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, username: user.username });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Middleware to verify token
+function auth(req, res, next) {
+  const token = req.header('Authorization');
+  if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Token is not valid' });
+  }
+}
+
+// Protected route example
+app.get('/api/protected', auth, (req, res) => {
+  res.json({ message: `Hello, ${req.user.id}. This is a protected route!` });
+});
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const toggleSignup = document.getElementById('toggle-signup');
+        const toggleLogin = document.getElementById('toggle-login');
+
+        toggleSignup.addEventListener('click', () => {
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
+        });
+
+        toggleLogin.addEventListener('click', () => {
+            signupForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        });
+
+        // Handle login form submission
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const user = users.find(user => user.email === email && user.password === password);
+
+            if (user) {
+                localStorage.setItem('loggedInUser', email);
+                alert('Login successful');
+                window.location.href = 'expense-tracker.html'; // Redirect to the expense tracker page
+            } else {
+                alert('Invalid credentials');
+            }
+        });
+
+        // Handle sign-up form submission
+        signupForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            users.push({ email, password });
+            localStorage.setItem('users', JSON.stringify(users));
+            alert('Registration successful');
+            
+            signupForm.reset();
+            signupForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        });
+
+        // Check if a user is logged in
+        if (localStorage.getItem('loggedInUser')) {
+            window.location.href = 'expense-tracker.html'; // Redirect if already logged in
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator with Undo (Backspace)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #2a2a72, #009ffd);
+        }
+
+        .calculator {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 90vh;
+            width: 90vw;
+            max-width: 400px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        #display {
+            height: 20%;
+            background-color: #f4f4f4;
+            font-size: 3em;
+            text-align: right;
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 15px;
+            height: 75%;
+        }
+
+        button {
+            background-color: #2d2d2d;
+            color: #fff;
+            font-size: 2em;
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #444444;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .operator {
+            background-color: #f78fb3;
+        }
+
+        .operator:hover {
+            background-color: #f97eaa;
+        }
+
+        .equals {
+            background-color: #34ace0;
+        }
+
+        .equals:hover {
+            background-color: #0a82bd;
+        }
+
+        #clear {
+            background-color: #ff5252;
+        }
+
+        #clear:hover {
+            background-color: #ff2b2b;
+        }
+
+        #undo {
+            background-color: #ff9f43;
+        }
+
+        #undo:hover {
+            background-color: #ff7843;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <input type="text" id="display" disabled>
+        <div class="buttons">
+            <button class="btn" data-value="7">7</button>
+            <button class="btn" data-value="8">8</button>
+            <button class="btn" data-value="9">9</button>
+            <button class="btn operator" data-value="/">/</button>
+            <button class="btn" data-value="4">4</button>
+            <button class="btn" data-value="5">5</button>
+            <button class="btn" data-value="6">6</button>
+            <button class="btn operator" data-value="*">*</button>
+            <button class="btn" data-value="1">1</button>
+            <button class="btn" data-value="2">2</button>
+            <button class="btn" data-value="3">3</button>
+            <button class="btn operator" data-value="-">-</button>
+            <button class="btn" data-value="0">0</button>
+            <button class="btn" data-value=".">.</button>
+            <button class="btn" id="clear">C</button>
+            <button class="btn operator" data-value="+">+</button>
+            <button class="btn equals" id="equals">=</button>
+            <button class="btn" id="undo">←</button>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let buttons = Array.from(document.getElementsByClassName('btn'));
+        let clearButton = document.getElementById('clear');
+        let equalsButton = document.getElementById('equals');
+        let undoButton = document.getElementById('undo');
+
+        // Handle button clicks
+        buttons.map(button => {
+            button.addEventListener('click', (e) => {
+                const value = e.target.getAttribute('data-value');
+                handleInput(value);
+            });
+        });
+
+        // Handle keyboard input
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleEquals();
+            } else if (e.key === 'Backspace') {
+                handleUndo();
+            } else {
+                handleInput(e.key);
+            }
+        });
+
+        // Function to handle input (both button and keyboard)
+        function handleInput(input) {
+            if (!isNaN(input) || input === '.') {
+                display.value += input;
+            } else if (['+', '-', '*', '/'].includes(input)) {
+                // Prevent entering multiple operators consecutively
+                if (/[\+\-\*\/]$/.test(display.value)) return;
+                display.value += input;
+            }
+        }
+
+        // Function to clear the display
+        function clearDisplay() {
+            display.value = '';
+        }
+
+        // Clear button click event
+        clearButton.addEventListener('click', clearDisplay);
+
+        // Equals button click event
+        equalsButton.addEventListener('click', handleEquals);
+
+        // Function to evaluate the expression
+        function handleEquals() {
+            try {
+                if (display.value) {
+                    display.value = eval(display.value);
+                }
+            } catch {
+                display.value = 'Error';
+            }
+        }
+
+        // Undo button (Backspace) event
+        undoButton.addEventListener('click', handleUndo);
+
+        // Function to undo last input
+        function handleUndo() {
+            display.value = display.value.slice(0, -1);
+        }
+    </script>
+</body>
+</html>

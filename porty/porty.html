@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Manoj.com</title>
+    <link rel="stylesheet" href="porty.css">
+    <link rel="stylesheet" href="content-style.css">
+    <style>
+        /* Minimal styles for the profile flip */
+        .profile-picture {
+            margin-bottom: 125px;
+            position: relative;
+            width: 200px;
+            height: 200px;
+            perspective: 1000px; /* Enable 3D effect */
+        }
+
+        .profile-picture img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 0px solid rgb(255, 197, 38);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            backface-visibility: hidden; /* Hide back when flipped */
+        }
+
+        /* Container for front and back faces */
+        .profile-pic-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d; /* Keep 3D effect */
+            transition: transform 1s; /* Smooth transition for flip */
+        }
+
+        /* Front face of the profile picture */
+        .profile-pic-inner .front {
+            position: absolute;
+            top: 0;
+            left: 0;
+            backface-visibility: hidden;
+        }
+
+        /* Back face of the profile picture (hidden by default) */
+        .profile-pic-inner .back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            backface-visibility: hidden;
+            transform: rotateY(180deg); /* Rotate the back face 180 degrees */
+        }
+
+        /* Hover effect to flip the profile picture */
+        .profile-picture:hover .profile-pic-inner {
+            transform: rotateY(180deg); /* Flip on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar">
+            <div class="profile-picture">
+                <a href="/porty/porty.html">
+                    <div class="profile-pic-inner">
+                        <!-- Front face of the profile picture -->
+                        <div class="front">
+                            <img src="/porty/src/manoj photo_Cartoonize Effect.jpg" alt="A smart boy's picture is loading...">
+                        </div>
+                        <!-- Back face of the profile picture -->
+                        <div class="back">
+                            <img src="/porty/src/VISI-M (1).png" alt="Back view of the profile">
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <ul>
+                <li><a href="/porty/home.html" data-content="home" class="tab active">Home</a></li>
+                <li><a href="/porty/education.html" data-content="education" class="tab">Education</a></li>
+                <li><a href="/porty/certifications.html" data-content="certifications" class="tab">Certifications</a></li>
+                <li><a href="/porty/projects.html" data-content="projects" class="tab">Projects</a></li>
+                <li><a href="/porty/contact.html" data-content="contact" class="tab">Contact</a></li>
+                <li><a href="/porty/src/Manoj_Resume (1).pdf" download="My_Resume.pdf">Download Resume</a><!-- Download Resume Option --></li>
+            </ul>
+        </nav>
+        <div class="content-box" id="content-box">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+    <script src="porty.js"></script>
+</body>
+</html>
